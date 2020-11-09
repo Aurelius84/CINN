@@ -15,7 +15,7 @@ class RefCount {
   value_type Dec() { return --count_; }
   bool is_zero() const { return 0 == count_; }
   std::string to_string() { return std::to_string(count_.load()); }
-  int32_t val() const { return count_; }
+  value_type val() const { return count_; }
 
  private:
   std::atomic<value_type> count_{0};
@@ -40,7 +40,7 @@ struct Shared {
   using object_ptr = T*;
 
   Shared() = default;
-  Shared(T* p) : p_(p) {
+  explicit Shared(T* p) : p_(p) {
     if (p) IncRef(p);
   }
   Shared(const Shared& other) : p_(other.p_) { IncRef(p_); }
