@@ -13,22 +13,28 @@ set(srcs
   )
 
 if(WITH_CUDA)
-  nv_test(test_hlir_framework_buffer SRCS buffer_test.cc DEPS core)
-  nv_test(test_hlir_framework_infershape_pass SRCS infershape_pass_test.cc DEPS core)
-  nv_test(test_cuda_graph_compiler SRCS cuda_graph_compiler_test.cc DEPS core)
+  nv_test(test_hlir_framework_buffer SRCS buffer_test.cc DEPS cinncore)
+  nv_test(test_hlir_framework_infershape_pass SRCS infershape_pass_test.cc DEPS cinncore)
+  nv_test(test_cuda_graph_compiler SRCS cuda_graph_compiler_test.cc DEPS cinncore)
 else()
-  cc_test(test_hlir_framework_buffer SRCS buffer_test.cc DEPS core)
-  cc_test(test_hlir_framework_infershape_pass SRCS infershape_pass_test.cc DEPS core)
+  cc_test(test_hlir_framework_buffer SRCS buffer_test.cc DEPS cinncore)
+  cc_test(test_hlir_framework_infershape_pass SRCS infershape_pass_test.cc DEPS cinncore)
 endif()
 
-cc_test(test_hlir_framework_tensor SRCS tensor_test.cc DEPS core)
-cc_test(test_hlir_framework_scope SRCS scope_test.cc DEPS core)
-cc_test(test_hlir_framework_instruction SRCS instruction_test.cc DEPS core)
-cc_test(test_hlir_framework_op SRCS op_test.cc DEPS core)
-cc_test(test_hlir_framework_print_graph_pass SRCS print_graph_pass_test.cc DEPS core)
+cc_test(test_hlir_framework_tensor SRCS tensor_test.cc DEPS cinncore)
+cc_test(test_hlir_framework_scope SRCS scope_test.cc DEPS cinncore)
+cc_test(test_hlir_framework_instruction SRCS instruction_test.cc DEPS cinncore)
+cc_test(test_hlir_framework_op SRCS op_test.cc DEPS cinncore)
+cc_test(test_hlir_framework_print_graph_pass SRCS print_graph_pass_test.cc DEPS cinncore)
 
 foreach(cpp ${srcs})
   set(core_src
     "${core_src};cinn/hlir/framework/${cpp}"
     CACHE INTERNAL "")
+endforeach()
+
+file(GLOB includes LIST_DIRECTORIES false RELATIVE ${CMAKE_SOURCE_DIR} *.h)
+
+foreach(header ${includes})
+  set(core_includes "${core_includes};${header}" CACHE INTERNAL "")
 endforeach()

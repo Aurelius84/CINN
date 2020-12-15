@@ -3,8 +3,10 @@
 #include <string>
 #include <vector>
 
+#include "cinn/backends/cuda_util.h"
 #include "cinn/common/test_helper.h"
 #include "cinn/hlir/framework/scope.h"
+#include "cinn/utils/timer.h"
 
 namespace cinn {
 namespace hlir {
@@ -38,6 +40,12 @@ class Instruction {
    * @param fn The JIT compiled function address.
    */
   void SetLoweredFunc(lower_func_ptr_t fn) { fn_ = fn; }
+
+  void RunTest(int repeat_) {
+    CHECK(fn_) << "The LoweredFunc address should be set first by calling SetLoweredFunc method";
+    auto& pod_args = PreparePodArgs();
+    fn_(pod_args.data(), pod_args.size());
+  }
 
   /**
    * Run the Instruction.

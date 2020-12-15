@@ -115,12 +115,12 @@ void IrPrinter::Visit(const Block *x) {
   os_ << "{\n";
 
   IncIndent();
-  for (int i = 0; i < x->stmts.size() - 1; i++) {
+  for (int i = 0; !x->stmts.empty() && i < x->stmts.size() - 1; i++) {
     DoIndent();
     Print(x->stmts[i]);
     os_ << "\n";
   }
-  if (x->stmts.size() >= 1) {
+  if (!x->stmts.empty()) {
     DoIndent();
     Print(x->stmts.back());
   }
@@ -233,7 +233,6 @@ void IrPrinter::Visit(const _Buffer_ *x) {
   os_ << "_Buffer_<" << x->type() << ": " << utils::Join(dim_names, ",") << ">(" << x->name << ")";
 }
 void IrPrinter::Visit(const _Tensor_ *x) {
-  CHECK(!x->shape.empty());
   os_ << "Tensor(";
   os() << x->name << ", ";
   os() << "[";
@@ -409,6 +408,20 @@ void IrPrinter::Visit(const intrinsics::ArgsConstruct *x) {
   os() << "(";
   Print(std::vector<Expr>(x->args.begin(), x->args.end()));
   os() << ")";
+}
+
+void IrPrinter::Visit(const intrinsics::UnaryIntrin *x) {
+  os_ << runtime::intrisic::unary_intrin_repr << "_";
+  os_ << x->name << "(";
+  if (!x->args.empty()) {
+    for (int i = 0; i < x->args.size() - 1; i++) {
+      Print(x->args[i]);
+      os_ << ", ";
+    }
+    Print(x->args.back());
+  }
+
+  os_ << ")";
 }
 
 std::ostream &operator<<(std::ostream &os, Expr a) {

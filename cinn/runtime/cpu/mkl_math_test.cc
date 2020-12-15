@@ -24,10 +24,9 @@ cinn_buffer_t *CreateBuffer(const std::vector<int> shape, bool random = true, in
   return common::BufferBuilder(Float(32), shape).set_zero().Build();
 }
 
-void TestCallElementwise(const std::string &fn_name,
-                         float (*fn_runtime)(float),
-                         bool is_elementwise,
-                         int set_value = 0) {
+template <typename FuncRuntime>
+void TestCallElementwise(
+    const std::string &fn_name, FuncRuntime fn_runtime, bool is_elementwise, Type type = Float(32), int set_value = 0) {
   Expr M(10);
   Expr N(10);
   Placeholder<float> x("x", {M, N});
@@ -72,27 +71,36 @@ void TestCallElementwise(const std::string &fn_name,
   } else {
     A_buf = CreateBuffer({10, 10});
   }
-  auto *B_buf = CreateBuffer({10, 10}, false);
+  auto *B_buf = common::BufferBuilder(type, {10, 10}).set_align(type.bits()).Build();
 
   cinn_pod_value_t a_arg(A_buf), b_arg(B_buf);
   cinn_pod_value_t args[] = {a_arg, b_arg};
   fn_(args, 2);
 
   auto *ad = reinterpret_cast<float *>(A_buf->memory);
-  auto *bd = reinterpret_cast<float *>(B_buf->memory);
-  for (int i = 0; i < A_buf->num_elements(); i++) {
-    ASSERT_NEAR(bd[i], fn_runtime(ad[i]), 1e-5);
+  if (type.is_bool()) {
+    auto *bd = reinterpret_cast<int8_t *>(B_buf->memory);
+    for (int i = 0; i < A_buf->num_elements(); i++) {
+      ASSERT_NEAR(bd[i], fn_runtime(ad[i]), 1e-5);
+    }
+  } else {
+    auto *bd = reinterpret_cast<float *>(B_buf->memory);
+    for (int i = 0; i < A_buf->num_elements(); i++) {
+      ASSERT_NEAR(bd[i], fn_runtime(ad[i]), 1e-5);
+    }
   }
 }
 
-#define TEST_MKL_MATH_FP32(test_name__, is_elementwise)                                                   \
-  TEST(mkl_math, test_name__) {                                                                           \
-    TestCallElementwise("cinn_cpu_" #test_name__ "_fp32", cinn_cpu_##test_name__##_fp32, is_elementwise); \
-  }
-#define TEST_MKL_MATH_FP32_SET(test_name__, is_elementwise, value)                                               \
-  TEST(mkl_math, test_name__) {                                                                                  \
-    TestCallElementwise("cinn_cpu_" #test_name__ "_fp32", cinn_cpu_##test_name__##_fp32, is_elementwise, value); \
-  }
+bool isnan(float e) { return std::isnan(e); }
+bool isfinite(float e) { return std::isfinite(e); }
+bool isinf(float e) { return std::isinf(e); }
+
+#define TEST_MKL_MATH_FP32(test_name__, is_elementwise) \
+  TEST(mkl_math, test_name__) { TestCallElementwise(#test_name__, test_name__, is_elementwise); }
+#define TEST_MKL_MATH_FP32_BOOL(test_name__, is_elementwise) \
+  TEST(mkl_math, test_name__) { TestCallElementwise(#test_name__, test_name__, is_elementwise, Bool()); }
+#define TEST_MKL_MATH_FP32_SET(test_name__, is_elementwise, value) \
+  TEST(mkl_math, test_name__) { TestCallElementwise(#test_name__, test_name__, is_elementwise, Float(32), value); }
 
 TEST_MKL_MATH_FP32(exp, true)
 TEST_MKL_MATH_FP32(erf, true)
@@ -115,12 +123,12 @@ TEST_MKL_MATH_FP32(asin, true)
 TEST_MKL_MATH_FP32(asinh, true)
 TEST_MKL_MATH_FP32(atan, true)
 TEST_MKL_MATH_FP32(atanh, true)
-TEST_MKL_MATH_FP32(isnan, true)
+TEST_MKL_MATH_FP32_BOOL(isnan, true)
 TEST_MKL_MATH_FP32(tanh, true)
-TEST_MKL_MATH_FP32(isfinite, true)
-TEST_MKL_MATH_FP32(isinf, true)
+TEST_MKL_MATH_FP32_BOOL(isfinite, true)
+TEST_MKL_MATH_FP32_BOOL(isinf, true)
 
-TEST(mkl_math, tanh_v_fp32) { TestCallElementwise("cinn_mkl_tanh_v_fp32", cinn_cpu_tanh_fp32, false); }
+TEST(mkl_math, tanh_v_fp32) { TestCallElementwise("cinn_mkl_tanh_v_fp32", tanh, false); }
 
 TEST(cinn_cpu_mkl_gemm_fp32, test) {
   Expr M(30);

@@ -42,9 +42,7 @@ std::shared_ptr<OpStrategy> StrategyForRelu(const framework::NodeAttr &attrs,
       Expr Out              = arg_pack[0];
       poly::StageMap stages = arg_pack[1];
       CHECK(Out.as_tensor());
-      pe::CudaSplitSchedule(stages[Out.as_tensor_ref()], output_shapes.back());
-      stages[Out.as_tensor_ref()]->Bind(0, "blockIdx.x");
-      stages[Out.as_tensor_ref()]->Bind(1, "threadIdx.x");
+      pe::CudaScheduleInjective(stages[Out.as_tensor_ref()], output_shapes.back(), target);
     }
     *ret = arg_pack;
   });
@@ -96,9 +94,7 @@ std::shared_ptr<OpStrategy> StrategyForRelu6(const framework::NodeAttr &attrs,
       Expr Out              = arg_pack[0];
       poly::StageMap stages = arg_pack[1];
       CHECK(Out.as_tensor());
-      pe::CudaSplitSchedule(stages[Out.as_tensor_ref()], output_shapes.back());
-      stages[Out.as_tensor_ref()]->Bind(0, "blockIdx.x");
-      stages[Out.as_tensor_ref()]->Bind(1, "threadIdx.x");
+      pe::CudaScheduleInjective(stages[Out.as_tensor_ref()], output_shapes.back(), target);
     }
     *ret = arg_pack;
   });
@@ -200,6 +196,8 @@ std::shared_ptr<OpStrategy> StrategyForConv2d(const framework::NodeAttr &attrs,
     if (target.arch == Target::Arch::NVGPU) {
       Expr Out = arg_pack[2];
       CHECK(Out.as_tensor());
+      // pe::CudaScheduleConv(stages, input_pad.as_tensor_ref(), weights_dilation.as_tensor_ref(), Out.as_tensor_ref(),
+      // target);
       stages[Out.as_tensor_ref()]->Split(1, 2);
       stages[Out.as_tensor_ref()]->Bind(0, "blockIdx.x");
       stages[Out.as_tensor_ref()]->Bind(1, "threadIdx.x");
@@ -444,9 +442,7 @@ std::shared_ptr<OpStrategy> StrategyForBatchNorm(const framework::NodeAttr &attr
       Expr Out              = arg_pack[0];
       poly::StageMap stages = arg_pack[1];
       CHECK(Out.as_tensor());
-      pe::CudaSplitSchedule(stages[Out.as_tensor_ref()], output_shapes.back());
-      stages[Out.as_tensor_ref()]->Bind(0, "blockIdx.x");
-      stages[Out.as_tensor_ref()]->Bind(1, "threadIdx.x");
+      pe::CudaScheduleInjective(stages[Out.as_tensor_ref()], output_shapes.back(), target);
     }
     *ret = arg_pack;
   });
@@ -1004,9 +1000,7 @@ std::shared_ptr<OpStrategy> StrategyForSigmoid(const framework::NodeAttr &attrs,
       Expr Out              = arg_pack[0];
       poly::StageMap stages = arg_pack[1];
       CHECK(Out.as_tensor());
-      pe::CudaSplitSchedule(stages[Out.as_tensor_ref()], output_shapes.back());
-      stages[Out.as_tensor_ref()]->Bind(0, "blockIdx.x");
-      stages[Out.as_tensor_ref()]->Bind(1, "threadIdx.x");
+      pe::CudaScheduleInjective(stages[Out.as_tensor_ref()], output_shapes.back(), target);
     }
     *ret = arg_pack;
   });
